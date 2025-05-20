@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xem NFT - BASE Mainnet</title>
+    <style>
+        /* CSS cơ bản cho giao diện */
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        .search-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        #wallet-input {
+            width: 400px;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        #search-button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+
+        #search-button:hover {
+            background-color: #45a049;
+        }
+
+        #loading {
+            text-align: center;
+            display: none;
+        }
+
+        #error-message {
+            color: red;
+            text-align: center;
+            margin: 10px 0;
+            display: none;
+        }
+
+        #nft-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+            padding: 20px 0;
+        }
+
+        .nft-card {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .nft-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 4px;
+        }
+
+        .nft-info {
+            margin-top: 10px;
+        }
+
+        .nft-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .nft-description {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .nft-id {
+            font-size: 12px;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <h1>Xem NFT trên BASE Mainnet</h1>
+    
+    <div class="search-container">
+        <input type="text" id="wallet-input" placeholder="Nhập địa chỉ ví của bạn">
+        <button id="search-button">Tìm kiếm</button>
+    </div>
+
+    <div id="loading">Đang tải...</div>
+    <div id="error-message"></div>
+    <div id="nft-grid"></div>
+
+    <script>
+        // Lấy các phần tử DOM
+        const walletInput = document.getElementById('wallet-input');
+        const searchButton = document.getElementById('search-button');
+        const loadingDiv = document.getElementById('loading');
+        const errorDiv = document.getElementById('error-message');
+        const nftGrid = document.getElementById('nft-grid');
+
+        // Hàm hiển thị thông báo lỗi
+        function showError(message) {
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            loadingDiv.style.display = 'none';
+            nftGrid.innerHTML = '';
+        }
+
+        // Hàm tìm kiếm NFT
+        async function searchNFTs() {
+            const walletAddress = walletInput.value.trim();
+            
+            // Kiểm tra địa chỉ ví có được nhập không
+            if (!walletAddress) {
+                showError('Vui lòng nhập địa chỉ ví');
+                return;
+            }
+
+            // Hiển thị trạng thái đang tải
+            loadingDiv.style.display = 'block';
+            errorDiv.style.display = 'none';
+            nftGrid.innerHTML = '';
+
+            try {
+                // Gọi API để lấy danh sách NFT
+                const response = await fetch(`/api/nfts/${walletAddress}`);
+                const data = await response.json();
+
+                // Kiểm tra nếu có lỗi
+                if (data.error) {
+                    showError(data.error);
+                    return;
+                }
+
+                // Ẩn trạng thái đang tải
+                loadingDiv.style.display = 'none';
+
+                // Kiểm tra nếu không có NFT nào
+                if (data.tokens.length === 0) {
+                    showError('Địa chỉ ví này không sở hữu NFT nào trong bộ sưu tập này');
+                    return;
+                }
+
+                // Hiển thị các NFT
+                data.tokens.forEach(token => {
+                    const nftCard = document.createElement('div');
+                    nftCard.className = 'nft-card';
+                    nftCard.innerHTML = `
+                        <img class="nft-image" src="${token.image}" alt="${token.name}">
+                        <div class="nft-info">
+                            <div class="nft-name">${token.name}</div>
+                            <div class="nft-description">${token.description}</div>
+                            <div class="nft-id">Token ID: ${token.tokenId}</div>
+                        </div>
+                    `;
+                    nftGrid.appendChild(nftCard);
+                });
+            } catch (error) {
+                showError('Có lỗi xảy ra khi tải thông tin NFT');
+            }
+        }
+
+        // Thêm sự kiện click cho nút tìm kiếm
+        searchButton.addEventListener('click', searchNFTs);
+
+        // Thêm sự kiện nhấn Enter trong ô input
+        walletInput.addEventListener('keypress', (event) => {
+            if (event.key === 'Enter') {
+                searchNFTs();
+            }
+        });
+    </script>
+</body>
+</html>
